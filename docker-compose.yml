@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: ./front/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: on-failure
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./back/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=${PORT}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - MONGODB_URI=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - CALLBACK_URL=${CALLBACK_URL}
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: on-failure
+  
+  db:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - db-data:/data/db
+    networks:
+      - app-network
+    restart: on-failure
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+    driver: bridge
