@@ -1,6 +1,20 @@
 export type IssueStatus = "open" | "in-progress" | "resolved";
 export type IssuePriority = "low" | "medium" | "high";
 
+export interface IssueLocation {
+	latitude: number;
+	longitude: number;
+	accuracy?: number;
+	timestamp?: string;
+}
+
+export interface AIMetadata {
+	labels: Array<{ name: string; confidence: number }>;
+	objects: Array<{ name: string; confidence: number }>;
+	detectedText?: string;
+	suggestedDescription?: string;
+}
+
 export interface Issue {
 	id: string;
 	description: string;
@@ -13,6 +27,8 @@ export interface Issue {
 		email: string;
 	};
 	assignedTo?: string;
+	location?: IssueLocation;
+	aiMetadata?: AIMetadata;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -20,6 +36,7 @@ export interface Issue {
 export interface CreateIssueDto {
 	description: string;
 	priority?: IssuePriority;
+	location?: IssueLocation;
 }
 
 export interface UpdateIssueDto {

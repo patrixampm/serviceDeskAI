@@ -13,6 +13,18 @@ interface Issue {
     email: string;
   };
   assignedTo?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    timestamp?: string;
+  };
+  aiMetadata?: {
+    labels: Array<{ name: string; confidence: number }>;
+    objects: Array<{ name: string; confidence: number }>;
+    detectedText?: string;
+    suggestedDescription?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -222,7 +234,7 @@ export function IssueLogPage() {
           </select>
         </div>
 
-        <button onClick={fetchIssues} className="refresh-btn">
+        <button onClick={fetchIssues} className="refresh-btn" aria-label="Refresh issues list">
           🔄 Refresh
         </button>
       </div>
@@ -241,14 +253,22 @@ export function IssueLogPage() {
                 <span
                   className="status-badge"
                   style={{ backgroundColor: getStatusColor(issue.status) }}
+                  aria-label={`Status: ${issue.status}`}
                 >
+                  {issue.status === 'open' && '⭕ '}
+                  {issue.status === 'in-progress' && '🔄 '}
+                  {issue.status === 'resolved' && '✅ '}
                   {issue.status.replace('-', ' ')}
                 </span>
                 {issue.priority && (
                   <span
                     className="priority-badge"
                     style={{ backgroundColor: getPriorityColor(issue.priority) }}
+                    aria-label={`Priority: ${issue.priority}`}
                   >
+                    {issue.priority === 'high' && '🔴 '}
+                    {issue.priority === 'medium' && '🟡 '}
+                    {issue.priority === 'low' && '🟢 '}
                     {issue.priority}
                   </span>
                 )}
@@ -277,7 +297,7 @@ export function IssueLogPage() {
       {selectedIssue && (
         <div className="modal-overlay" onClick={() => setSelectedIssue(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedIssue(null)}>
+            <button className="modal-close" onClick={() => setSelectedIssue(null)} aria-label="Close issue details">
               ✕
             </button>
 
@@ -325,6 +345,87 @@ export function IssueLogPage() {
               </div>
             )}
 
+            {selectedIssue.aiMetadata && (
+              <div className="modal-section">
+                <label>🤖 AI Analysis</label>
+                {selectedIssue.aiMetadata.suggestedDescription && (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: '8px',
+                    marginBottom: '1rem',
+                    fontSize: '0.875rem',
+                  }}>
+                    <strong>AI Suggestion:</strong> {selectedIssue.aiMetadata.suggestedDescription}
+                  </div>
+                )}
+                {selectedIssue.aiMetadata.objects.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <strong>Detected Objects:</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {selectedIssue.aiMetadata.objects.map((obj, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            borderRadius: '16px',
+                            fontSize: '0.75rem',
+                            color: '#10b981',
+                          }}
+                        >
+                          {obj.name} ({Math.round(obj.confidence * 100)}%)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedIssue.aiMetadata.labels.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <strong>Labels:</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {selectedIssue.aiMetadata.labels.slice(0, 8).map((label, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            border: '1px solid rgba(168, 85, 247, 0.2)',
+                            borderRadius: '16px',
+                            fontSize: '0.75rem',
+                            color: '#a855f7',
+                          }}
+                        >
+                          {label.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedIssue.aiMetadata.detectedText && (
+                  <div>
+                    <strong>Detected Text (OCR):</strong>
+                    <p style={{
+                      marginTop: '0.5rem',
+                      padding: '0.75rem',
+                      backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                      border: '1px solid rgba(251, 191, 36, 0.2)',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: '150px',
+                      overflowY: 'auto',
+                    }}>
+                      {selectedIssue.aiMetadata.detectedText}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="modal-section">
               <label>Reported By</label>
               <p>
@@ -332,6 +433,36 @@ export function IssueLogPage() {
                 {selectedIssue.createdBy.email}
               </p>
             </div>
+
+            {selectedIssue.location && (
+              <div className="modal-section">
+                <label>📍 Location</label>
+                <p>
+                  <strong>Coordinates:</strong> {selectedIssue.location.latitude.toFixed(6)}, {selectedIssue.location.longitude.toFixed(6)}
+                  {selectedIssue.location.accuracy && (
+                    <><br /><strong>Accuracy:</strong> ±{Math.round(selectedIssue.location.accuracy)}m</>
+                  )}
+                </p>
+                <a
+                  href={`https://www.google.com/maps?q=${selectedIssue.location.latitude},${selectedIssue.location.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'var(--accent)',
+                    color: '#000',
+                    textDecoration: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  }}
+                >
+                  🗺️ View on Google Maps
+                </a>
+              </div>
+            )}
 
             <div className="modal-section">
               <label>Created</label>

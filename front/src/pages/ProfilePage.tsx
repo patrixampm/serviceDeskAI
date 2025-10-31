@@ -1,8 +1,14 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import './ProfilePage.css';
+
+interface Office {
+  id: string;
+  name: string;
+  country: string;
+}
 
 export function ProfilePage() {
   const { user } = useAuth();
@@ -11,11 +17,30 @@ export function ProfilePage() {
   const [email, setEmail] = useState(user?.email || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [country, setCountry] = useState(user?.country || '');
-  const [office, setOffice] = useState('');
-  const [workstation, setWorkstation] = useState('');
+  const [office, setOffice] = useState(user?.office || '');
+  const [workstation, setWorkstation] = useState(user?.workstation || '');
   
+  const [offices, setOffices] = useState<Office[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    fetchOffices();
+  }, []);
+
+  const fetchOffices = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/standard-user/offices', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOffices(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch offices:', error);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -73,20 +98,46 @@ export function ProfilePage() {
             placeholder="+1234567890"
           />
 
+          <div className="form-group">
+            <label htmlFor="office">Office Location *</label>
+            <select
+              id="office"
+              value={office}
+              onChange={(e) => {
+                const selectedOffice = offices.find(o => o.name === e.target.value);
+                setOffice(e.target.value);
+                if (selectedOffice) {
+                  setCountry(selectedOffice.country);
+                }
+              }}
+              required
+              style={{
+                width: '100%',
+                padding: '0.875rem 1rem',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                color: 'var(--text-primary)',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+              }}
+            >
+              <option value="">Select an office</option>
+              {offices.map((off) => (
+                <option key={off.id} value={off.name}>
+                  {off.name} ({off.country})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Input
             label="Country"
             type="text"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             required
-          />
-
-          <Input
-            label="Office Location"
-            type="text"
-            value={office}
-            onChange={(e) => setOffice(e.target.value)}
-            placeholder="e.g., Malaga Office"
+            disabled
           />
 
           <Input

@@ -22,7 +22,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="layout">
-      <nav className="nav">
+      <nav className="nav" role="navigation" aria-label="Main navigation">
         <div className="nav-brand">Service Desk AI</div>
         
         <div className="nav-links">
@@ -41,13 +41,13 @@ export function Layout({ children }: LayoutProps) {
           <Link to="/chat" className="nav-link">Chat</Link>
           <Link to="/profile" className="nav-link">Profile</Link>
           
-          <button onClick={handleLogout} className="nav-link logout-btn">
+          <button onClick={handleLogout} className="nav-link logout-btn" aria-label="Logout from your account">
             Logout
           </button>
         </div>
       </nav>
 
-      <main className="main-content">
+      <main className="main-content" role="main">
         {children}
       </main>
     </div>

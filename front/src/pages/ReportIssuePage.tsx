@@ -1,13 +1,48 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Button } from '../components/Button';
 import './ReportIssuePage.css';
+
+interface Location {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  timestamp?: Date;
+}
 
 export function ReportIssuePage() {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [location, setLocation] = useState<Location | null>(null);
+  const [locationStatus, setLocationStatus] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Capture geolocation on component mount
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      setLocationStatus('Detecting location...');
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const loc = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: new Date(position.timestamp),
+          };
+          setLocation(loc);
+          setLocationStatus(`✓ Location captured (±${Math.round(loc.accuracy || 0)}m)`);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          setLocationStatus('Location unavailable');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setLocationStatus('Geolocation not supported');
+    }
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,6 +76,9 @@ export function ReportIssuePage() {
     if (image) {
       formData.append('image', image);
     }
+    if (location) {
+      formData.append('location', JSON.stringify(location));
+    }
 
     try {
       const response = await fetch('http://localhost:3000/api/issues', {
@@ -71,6 +109,20 @@ export function ReportIssuePage() {
         <p className="report-subtitle">Describe the problem and upload a photo</p>
 
         <form className="report-form" onSubmit={handleSubmit}>
+          {locationStatus && (
+            <div className="location-status" style={{ 
+              padding: '0.75rem',
+              backgroundColor: location ? 'rgba(74, 222, 128, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+              border: `1px solid ${location ? 'rgba(74, 222, 128, 0.2)' : 'rgba(251, 191, 36, 0.2)'}`,
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              color: location ? '#4ade80' : '#fbbf24',
+              marginBottom: '1rem'
+            }}>
+              {locationStatus}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="description" className="form-label">
               Issue Description

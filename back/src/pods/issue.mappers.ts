@@ -14,6 +14,18 @@ export const mapIssueFromModelToApi = (issue: dbModel.Issue): apiModel.Issue => 
 		email: issue.createdBy.email,
 	},
 	assignedTo: issue.assignedTo ? mapObjectIdToString(issue.assignedTo) : undefined,
+	location: issue.location ? {
+		latitude: issue.location.latitude,
+		longitude: issue.location.longitude,
+		accuracy: issue.location.accuracy,
+		timestamp: issue.location.timestamp?.toISOString(),
+	} : undefined,
+	aiMetadata: issue.aiMetadata ? {
+		labels: issue.aiMetadata.labels,
+		objects: issue.aiMetadata.objects,
+		detectedText: issue.aiMetadata.detectedText,
+		suggestedDescription: issue.aiMetadata.suggestedDescription,
+	} : undefined,
 	createdAt: issue.createdAt.toISOString(),
 	updatedAt: issue.updatedAt.toISOString(),
 });

@@ -98,6 +98,23 @@ adminApi.get("/analytics", async (req, res) => {
 			.limit(10)
 			.toArray();
 
+		// Get issues with location data for geographic analysis
+		const issuesWithLocation = await issueCollection
+			.find({ location: { $exists: true } })
+			.toArray();
+
+		const locationStats = {
+			totalWithLocation: issuesWithLocation.length,
+			totalWithoutLocation: totalIssues - issuesWithLocation.length,
+			locations: issuesWithLocation.map(issue => ({
+				id: issue._id.toString(),
+				latitude: issue.location?.latitude,
+				longitude: issue.location?.longitude,
+				status: issue.status,
+				priority: issue.priority,
+			})),
+		};
+
 		res.json({
 			summary: {
 				totalUsers,
@@ -112,6 +129,7 @@ adminApi.get("/analytics", async (req, res) => {
 				avgResolutionTimeMs: avgResolutionTime,
 			},
 			issuesByOffice,
+			locationStats,
 			recentIssues: recentIssues.map((issue) => ({
 				id: issue._id.toString(),
 				description: issue.description,

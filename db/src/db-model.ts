@@ -28,6 +28,18 @@ export interface Issue {
 		email: string;
 	};
 	assignedTo?: ObjectId;
+	location?: {
+		latitude: number;
+		longitude: number;
+		accuracy?: number;
+		timestamp?: Date;
+	};
+	aiMetadata?: {
+		labels: Array<{ name: string; confidence: number }>;
+		objects: Array<{ name: string; confidence: number }>;
+		detectedText?: string;
+		suggestedDescription?: string;
+	};
 	createdAt: Date;
 	updatedAt: Date;
 }

@@ -7,6 +7,8 @@ interface User {
   role: 'standard-user' | 'service-desk-user' | 'admin-user';
   phoneNumber?: string;
   country: string;
+  office: string;
+  workstation?: string;
 }
 
 interface AuthContextType {

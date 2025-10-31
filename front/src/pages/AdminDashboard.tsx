@@ -15,6 +15,17 @@ interface Analytics {
     avgResolutionTimeMs: number;
   };
   issuesByOffice: Array<{ _id: string; count: number }>;
+  locationStats: {
+    totalWithLocation: number;
+    totalWithoutLocation: number;
+    locations: Array<{
+      id: string;
+      latitude: number;
+      longitude: number;
+      status: string;
+      priority?: string;
+    }>;
+  };
   recentIssues: Array<{
     id: string;
     description: string;
@@ -496,11 +507,17 @@ export function AdminDashboard() {
                 {analytics.recentIssues.map((issue) => (
                   <div key={issue.id} className="recent-issue-item">
                     <div className="recent-issue-header">
-                      <span className={`status-badge-small ${issue.status}`}>
+                      <span className={`status-badge-small ${issue.status}`} aria-label={`Status: ${issue.status}`}>
+                        {issue.status === 'open' && '⭕ '}
+                        {issue.status === 'in-progress' && '🔄 '}
+                        {issue.status === 'resolved' && '✅ '}
                         {issue.status}
                       </span>
                       {issue.priority && (
-                        <span className={`priority-badge-small ${issue.priority}`}>
+                        <span className={`priority-badge-small ${issue.priority}`} aria-label={`Priority: ${issue.priority}`}>
+                          {issue.priority === 'high' && '🔴 '}
+                          {issue.priority === 'medium' && '🟡 '}
+                          {issue.priority === 'low' && '🟢 '}
                           {issue.priority}
                         </span>
                       )}
@@ -514,6 +531,43 @@ export function AdminDashboard() {
                 ))}
               </div>
             </div>
+
+            {analytics.locationStats && (
+              <div className="chart-card">
+                <h3>📍 Geographic Data</h3>
+                <div style={{ padding: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
+                        {analytics.locationStats.totalWithLocation}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        With Location
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>
+                        {analytics.locationStats.totalWithoutLocation}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        Without Location
+                      </div>
+                    </div>
+                  </div>
+                  {analytics.locationStats.totalWithLocation > 0 && (
+                    <div style={{ 
+                      padding: '0.75rem',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '8px',
+                      fontSize: '0.875rem',
+                    }}>
+                      💡 <strong>{Math.round((analytics.locationStats.totalWithLocation / analytics.summary.totalIssues) * 100)}%</strong> of issues have location data
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -563,8 +617,8 @@ export function AdminDashboard() {
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>
-                        <span className={`role-badge ${user.role}`}>
-                          {user.role.replace('-', ' ')}
+                        <span className={`role-badge ${user.role || ''}`}>
+                          {user.role ? user.role.replace('-', ' ') : 'N/A'}
                         </span>
                       </td>
                       <td>{user.office || 'N/A'}</td>
@@ -572,6 +626,7 @@ export function AdminDashboard() {
                       <td>
                         <button
                           className="btn-icon"
+                          aria-label={`Edit user ${user.name}`}
                           onClick={() => {
                             setEditingUser(user);
                             setUserForm({
@@ -591,6 +646,7 @@ export function AdminDashboard() {
                         </button>
                         <button
                           className="btn-icon btn-danger"
+                          aria-label={`Delete user ${user.name}`}
                           onClick={() => handleDeleteUser(user.id)}
                         >
                           🗑️
@@ -639,6 +695,7 @@ export function AdminDashboard() {
                   <div className="office-actions">
                     <button
                       className="btn-icon"
+                      aria-label={`Edit office ${office.name}`}
                       onClick={() => {
                         setEditingOffice(office);
                         setOfficeForm({ name: office.name, country: office.country });
@@ -649,6 +706,7 @@ export function AdminDashboard() {
                     </button>
                     <button
                       className="btn-icon btn-danger"
+                      aria-label={`Delete office ${office.name}`}
                       onClick={() => handleDeleteOffice(office.id)}
                     >
                       🗑️
@@ -666,7 +724,7 @@ export function AdminDashboard() {
       {showUserForm && (
         <div className="modal-overlay" onClick={() => setShowUserForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowUserForm(false)}>
+            <button className="modal-close" onClick={() => setShowUserForm(false)} aria-label="Close user form">
               ✕
             </button>
             <h2>{editingUser ? 'Edit User' : 'Create New User'}</h2>
@@ -775,7 +833,7 @@ export function AdminDashboard() {
       {showOfficeForm && (
         <div className="modal-overlay" onClick={() => setShowOfficeForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowOfficeForm(false)}>
+            <button className="modal-close" onClick={() => setShowOfficeForm(false)} aria-label="Close office form">
               ✕
             </button>
             <h2>{editingOffice ? 'Edit Office' : 'Create New Office'}</h2>

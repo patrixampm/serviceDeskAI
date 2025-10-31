@@ -7,7 +7,7 @@
 .report-card {
   width: 100%;
   max-width: 700px;
-  background-color: var(--bg-secondary);
+  background-color: #454444;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2.5rem 2rem;
@@ -35,7 +35,7 @@
 .form-textarea {
   width: 100%;
   padding: 0.875rem 1rem;
-  background-color: var(--bg-primary);
+  background-color: #1a1a1a;;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-primary);
@@ -54,7 +54,7 @@
 .form-file-input {
   width: 100%;
   padding: 0.875rem 1rem;
-  background-color: var(--bg-primary);
+  background-color: #1a1a1a;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-primary);

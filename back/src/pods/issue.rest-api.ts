@@ -5,6 +5,7 @@ import { dbRepository } from "../dals/issue.repository.js";
 import { dbRepository as userRepository } from "../dals/user.repository.js";
 import { mapIssueFromModelToApi } from "./issue.mappers.js";
 import { mapStringToObjectId } from "../helpers/mapper.helpers.js";
+import { analyzeImage } from "../services/vision.service.js";
 
 export const issueApi = Router();
 
@@ -43,7 +44,7 @@ issueApi.post("/", upload.single("image"), async (req, res, next) => {
 			return;
 		}
 
-		const { description, priority } = req.body;
+		const { description, priority, location } = req.body;
 
 		if (!description) {
 			res.status(400).json({ error: "Description is required" });
@@ -64,6 +65,43 @@ issueApi.post("/", upload.single("image"), async (req, res, next) => {
 			? `/uploads/issues/${req.file.filename}`
 			: undefined;
 
+		// Parse location if provided
+		let parsedLocation = undefined;
+		if (location) {
+			try {
+				const loc = typeof location === 'string' ? JSON.parse(location) : location;
+				parsedLocation = {
+					latitude: loc.latitude,
+					longitude: loc.longitude,
+					accuracy: loc.accuracy,
+					timestamp: loc.timestamp ? new Date(loc.timestamp) : new Date(),
+				};
+			} catch (error) {
+				console.error('Failed to parse location:', error);
+			}
+		}
+
+		// Analyze image with Google Cloud Vision API if image was uploaded
+		let aiMetadata = undefined;
+		if (req.file) {
+			try {
+				console.log('🤖 Analyzing image with AI...');
+				const analysis = await analyzeImage(req.file.path);
+				if (analysis) {
+					aiMetadata = {
+						labels: analysis.labels,
+						objects: analysis.objects,
+						detectedText: analysis.detectedText,
+						suggestedDescription: analysis.suggestedDescription,
+					};
+					console.log('✓ AI analysis complete:', aiMetadata.suggestedDescription);
+				}
+			} catch (error) {
+				console.error('Vision API error (continuing without AI data):', error);
+				// Continue without AI metadata - don't fail the entire request
+			}
+		}
+
 		const issueId = await dbRepository.createIssue({
 			description,
 			imageUrl,
@@ -74,6 +112,8 @@ issueApi.post("/", upload.single("image"), async (req, res, next) => {
 				name: currentUser.name,
 				email: currentUser.email,
 			},
+			location: parsedLocation,
+			aiMetadata,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		});
